@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Money in Motion — Payments 101</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16243B;
+    --ink-soft:#22324d;
+    --canvas:#EEF1F6;
+    --surface:#FFFFFF;
+    --surface-2:#F6F8FB;
+    --muted:#5A6678;
+    --line:#DBE2EC;
+    --line-strong:#C3CEDC;
+
+    --ach:#1F9D74;   --ach-bg:#E4F4ED;
+    --wire:#D64545;  --wire-bg:#FBE7E5;
+    --rtp:#2D6CF6;   --rtp-bg:#E4ECFE;
+    --card:#D98321;  --card-bg:#FBEEDB;
+
+    --shadow:0 1px 2px rgba(22,36,59,.06), 0 12px 32px -16px rgba(22,36,59,.22);
+    --shadow-lg:0 24px 60px -28px rgba(22,36,59,.45);
+    --r:18px;
+    --maxw:980px;
+    --display:"Space Grotesk", "Segoe UI", system-ui, sans-serif;
+    --body:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --mono:"IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    font-family:var(--body);
+    color:var(--ink);
+    background:var(--canvas);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:var(--display); line-height:1.12; margin:0; letter-spacing:-.01em;}
+  p{margin:0 0 1em;}
+  .mono{font-family:var(--mono);}
+  .center{text-align:center;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    display:flex; align-items:center; gap:16px;
+    padding:12px clamp(16px,4vw,40px);
+    background:rgba(238,241,246,.86);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:center; gap:11px; font-family:var(--display); font-weight:700; font-size:15px; letter-spacing:-.01em;}
+  .brand .glyph{
+    width:26px;height:26px;border-radius:8px;
+    background:linear-gradient(135deg,var(--rtp),var(--ach) 55%,var(--card));
+    position:relative; flex:none;
+    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.4);
+  }
+  .brand .glyph::after{content:"";position:absolute;inset:0;margin:auto;width:9px;height:9px;border-radius:50%;background:#fff;}
+  .topbar .spacer{flex:1;}
+  .crumb{font-size:12.5px; color:var(--muted); font-family:var(--mono); display:none;}
+  @media(min-width:720px){ .crumb{display:block;} }
+  .progress-mini{display:flex; gap:5px; align-items:center;}
+  .pdot{width:9px;height:9px;border-radius:50%; background:var(--line-strong); transition:.25s;}
+  .pdot.ach.on{background:var(--ach);} .pdot.wire.on{background:var(--wire);}
+  .pdot.rtp.on{background:var(--rtp);} .pdot.card.on{background:var(--card);}
+  .restart{
+    border:1px solid var(--line-strong); background:var(--surface); color:var(--ink-soft);
+    font-family:var(--body); font-weight:500; font-size:12.5px; padding:7px 12px; border-radius:99px; cursor:pointer; transition:.18s;
+  }
+  .restart:hover{background:var(--ink); color:#fff; border-color:var(--ink);}
+
+  /* ---------- Stage / screens ---------- */
+  .stage{max-width:var(--maxw); margin:0 auto; padding:clamp(24px,5vw,56px) clamp(16px,4vw,40px) 90px;}
+  .screen{display:none; animation:rise .5s cubic-bezier(.2,.7,.2,1);}
+  .screen.active{display:block;}
+  @keyframes rise{from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:none;}}
+
+  .eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:14px;}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family:var(--body); font-weight:600; font-size:15px; cursor:pointer;
+    border-radius:99px; padding:13px 26px; border:1px solid transparent; transition:.18s; display:inline-flex; align-items:center; gap:9px;
+  }
+  .btn-primary{background:var(--ink); color:#fff;}
+  .btn-primary:hover{background:#0c1a30; transform:translateY(-1px);}
+  .btn-ghost{background:transparent; color:var(--ink-soft); border-color:var(--line-strong);}
+  .btn-ghost:hover{background:var(--surface); border-color:var(--ink);}
+  .btn .arr{transition:transform .18s;}
+  .btn:hover .arr{transform:translateX(3px);}
+  .backlink{
+    background:none; border:none; color:var(--muted); font-family:var(--mono); font-size:12.5px; cursor:pointer; padding:8px 0; margin-bottom:8px; display:inline-flex; gap:7px; align-items:center;
+  }
+  .backlink:hover{color:var(--ink);}
+
+  :focus-visible{outline:3px solid #2D6CF6; outline-offset:2px; border-radius:6px;}
+
+  /* ================= WELCOME / HERO ================= */
+  .hero{
+    background:var(--ink);
+    color:#EAF0FA;
+    border-radius:28px;
+    padding:clamp(28px,5vw,56px);
+    box-shadow:var(--shadow-lg);
+    overflow:hidden; position:relative;
+  }
+  .hero .eyebrow{color:#8FA6CC;}
+  .hero h1{font-size:clamp(38px,8vw,76px); font-weight:700; color:#fff; letter-spacing:-.03em; margin-bottom:18px;}
+  .hero h1 em{font-style:normal; color:#8FB7FF; position:relative;}
+  .hero .lede{font-size:clamp(16px,2.3vw,20px); color:#C4D2EA; max-width:60ch; margin-bottom:30px;}
+  .hero-cta{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
+  .hero-cta .btn-primary{background:#fff; color:var(--ink);}
+  .hero-cta .btn-primary:hover{background:#E7EEFB;}
+  .hero-note{font-family:var(--mono); font-size:12px; color:#7E93B8;}
+
+  /* The signature: a live rail map */
+  .railmap{margin-top:40px; display:grid; gap:13px;}
+  .rail-row{display:grid; grid-template-columns:74px 1fr auto; align-items:center; gap:14px;}
+  .rail-tag{font-family:var(--mono); font-size:12px; font-weight:600; text-align:right; color:#fff;}
+  .rail-track{position:relative; height:18px;}
+  .rail-track .line{position:absolute; top:50%; left:0; right:0; height:3px; transform:translateY(-50%); border-radius:3px; opacity:.32;}
+  .rail-track .stn{position:absolute; top:50%; width:8px;height:8px; border-radius:50%; transform:translate(-50%,-50%); background:#3a4d6e;}
+  .rail-track .stn:nth-child(2){left:4%;} .rail-track .stn:nth-child(3){left:50%;} .rail-track .stn:nth-child(4){left:96%;}
+  .token{
+    position:absolute; top:50%; width:16px;height:16px; border-radius:50%; transform:translate(-50%,-50%);
+    box-shadow:0 0 0 4px rgba(255,255,255,.12), 0 0 14px 1px currentColor;
+    left:4%;
+  }
+  .rail-speed{font-family:var(--mono); font-size:11px; color:#8298BD; white-space:nowrap;}
+  .r-ach .line,.r-ach .token{color:var(--ach); background:var(--ach);}
+  .r-wire .line,.r-wire .token{color:var(--wire); background:var(--wire);}
+  .r-rtp .line,.r-rtp .token{color:var(--rtp); background:var(--rtp);}
+  .r-card .line,.r-card .token{color:var(--card); background:var(--card);}
+  .r-ach .rail-tag{color:#8DE3C4;} .r-wire .rail-tag{color:#F4A7A2;}
+  .r-rtp .rail-tag{color:#A9C4FF;} .r-card .rail-tag{color:#F2C786;}
+
+  .r-ach .token{animation:slowmove 7s steps(3) infinite;}
+  .r-wire .token{animation:fastmove 2s cubic-bezier(.5,0,.5,1) infinite;}
+  .r-rtp .token{animation:zip 1.2s cubic-bezier(.6,0,.3,1) infinite;}
+  .r-card .token{animation:cardmove 4.2s cubic-bezier(.4,0,.2,1) infinite;}
+  @keyframes slowmove{0%{left:4%;}100%{left:96%;}}
+  @keyframes fastmove{0%{left:4%; opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{left:96%; opacity:0;}}
+  @keyframes zip{0%{left:4%; opacity:0;}15%{opacity:1;}85%{opacity:1;}100%{left:96%; opacity:0;}}
+  @keyframes cardmove{0%{left:4%;}45%{left:50%;}55%{left:50%;}100%{left:96%;}}
+
+  /* ================= GENERIC CARD GRID ================= */
+  .lead-h{font-size:clamp(26px,4.5vw,40px); margin-bottom:12px;}
+  .lead-p{font-size:clamp(15px,2vw,18px); color:var(--muted); max-width:64ch; margin-bottom:30px;}
+
+  .grid{display:grid; gap:16px;}
+  @media(min-width:680px){ .grid.cols-2{grid-template-columns:1fr 1fr;} }
+  @media(min-width:680px){ .grid.cols-4{grid-template-columns:1fr 1fr;} }
+  @media(min-width:920px){ .grid.cols-4{grid-template-columns:repeat(4,1fr);} }
+
+  .pick{
+    text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+    padding:22px; cursor:pointer; transition:.2s; box-shadow:var(--shadow); position:relative; overflow:hidden;
+    font-family:var(--body); color:var(--ink); display:flex; flex-direction:column; min-height:100%;
+  }
+  .pick:hover{transform:translateY(-3px); border-color:var(--line-strong); box-shadow:var(--shadow-lg);}
+  .pick .num{font-family:var(--mono); font-size:12px; color:var(--muted);}
+  .pick h3{font-size:20px; margin:10px 0 8px;}
+  .pick .who{font-size:13.5px; color:var(--muted); flex:1;}
+  .pick .go{margin-top:16px; font-family:var(--mono); font-size:12.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px; color:var(--ink);}
+  .pick .stripe{position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--line-strong);}
+  .pick.s-smb .stripe{background:#6E8BB8;} .pick.s-mm .stripe{background:#4C6FB0;}
+  .pick.s-corp .stripe{background:#2E4E86;} .pick.s-ent .stripe{background:#16243B;}
+
+  /* Fundamentals building blocks */
+  .blocks{display:grid; gap:14px; margin-bottom:26px;}
+  @media(min-width:760px){ .blocks{grid-template-columns:1fr 1fr;} }
+  .block{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:22px; box-shadow:var(--shadow);}
+  .block h3{font-size:18px; margin-bottom:8px; display:flex; align-items:center; gap:10px;}
+  .block .ico{width:30px;height:30px;border-radius:9px; flex:none; display:grid; place-items:center; background:var(--surface-2); font-size:16px;}
+  .block p{font-size:14.5px; color:var(--muted); margin:0;}
+  .block .micro{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); margin-top:10px; padding-top:10px; border-top:1px dashed var(--line);}
+
+  .flow{display:flex; align-items:stretch; gap:0; flex-wrap:wrap; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:20px; box-shadow:var(--shadow); margin-bottom:26px;}
+  .flow .node{flex:1 1 120px; text-align:center; padding:8px;}
+  .flow .node .big{font-family:var(--display); font-weight:600; font-size:15px;}
+  .flow .node .sm{font-size:12px; color:var(--muted);}
+  .flow .arrow{display:grid; place-items:center; color:var(--line-strong); font-size:20px; flex:0 0 26px;}
+
+  .decoder{margin:6px 0 26px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface);}
+  .decoder summary{cursor:pointer; padding:14px 18px; font-family:var(--mono); font-size:13px; font-weight:600; color:var(--ink); list-style:none; display:flex; align-items:center; gap:10px;}
+  .decoder summary::-webkit-details-marker{display:none;}
+  .decoder summary::before{content:"+"; font-size:17px; color:var(--rtp); width:16px;}
+  .decoder[open] summary::before{content:"–";}
+  .decoder .body{padding:2px 18px 18px; font-size:14px; color:var(--muted);}
+  .decoder dt{font-weight:600; color:var(--ink); font-family:var(--body); margin-top:12px;}
+  .decoder dd{margin:2px 0 0;}
+
+  /* ================= RAIL HUB ================= */
+  .hub-head{display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:8px;}
+  .seg-chip{font-family:var(--mono); font-size:12px; background:var(--ink); color:#fff; padding:6px 13px; border-radius:99px; display:inline-flex; gap:8px; align-items:center;}
+  .seg-chip button{background:none;border:none;color:#9fb6da;font-family:var(--mono);font-size:11px;cursor:pointer;text-decoration:underline;}
+  .railcards{display:grid; gap:16px; margin:24px 0;}
+  @media(min-width:680px){ .railcards{grid-template-columns:1fr 1fr;} }
+  .railcard{
+    text-align:left; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:0; cursor:pointer;
+    transition:.2s; box-shadow:var(--shadow); overflow:hidden; font-family:var(--body); color:var(--ink); position:relative;
+  }
+  .railcard:hover{transform:translateY(-3px); box-shadow:var(--shadow-lg);}
+  .railcard .cap{height:6px;}
+  .railcard.ach .cap{background:var(--ach);} .railcard.wire .cap{background:var(--wire);}
+  .railcard.rtp .cap{background:var(--rtp);} .railcard.card .cap{background:var(--card);}
+  .railcard .inner{padding:20px 22px;}
+  .railcard .top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px;}
+  .railcard h3{font-size:21px;}
+  .railcard .tagline{font-size:13.5px; color:var(--muted); margin-bottom:14px;}
+  .chips{display:flex; gap:7px; flex-wrap:wrap;}
+  .chip{font-family:var(--mono); font-size:11px; font-weight:500; padding:4px 10px; border-radius:99px; background:var(--surface-2); color:var(--ink-soft);}
+  .railcard.ach .chip{background:var(--ach-bg); color:#0f6b4d;}
+  .railcard.wire .chip{background:var(--wire-bg); color:#9c2b2b;}
+  .railcard.rtp .chip{background:var(--rtp-bg); color:#1b4ba8;}
+  .railcard.card .chip{background:var(--card-bg); color:#9a5d12;}
+  .fit{font-family:var(--mono); font-size:11px; padding:4px 9px; border-radius:7px; font-weight:600; white-space:nowrap;}
+  .fit.core{background:#102a1f; color:#7ff0c4;}
+  .fit.common{background:#1c2c14; color:#bfe88a;}
+  .fit.situational{background:#2c2410; color:#f0cf8a;}
+  .done-pill{position:absolute; top:14px; right:14px; font-family:var(--mono); font-size:10.5px; background:#102a1f; color:#7ff0c4; padding:3px 8px; border-radius:99px; display:none;}
+  .railcard.explored .done-pill{display:inline-block;}
+
+  .hub-extra{display:grid; gap:14px; margin-top:8px;}
+  @media(min-width:680px){ .hub-extra{grid-template-columns:1fr 1fr;} }
+  .xcard{display:flex; gap:16px; align-items:center; text-align:left; background:var(--ink); color:#E7EEF9; border:none; border-radius:var(--r); padding:20px 22px; cursor:pointer; transition:.2s; box-shadow:var(--shadow); font-family:var(--body);}
+  .xcard:hover{transform:translateY(-3px); box-shadow:var(--shadow-lg);}
+  .xcard .emoji{font-size:26px;}
+  .xcard h4{font-size:16px; color:#fff; margin-bottom:3px;}
+  .xcard p{font-size:13px; color:#A9BBD8; margin:0;}
+  .xcard.quiz{background:linear-gradient(120deg,#1b2f52,#16243B);}
+
+  /* ================= RAIL DETAIL ================= */
+  .rail-hero{border-radius:24px; padding:clamp(24px,4vw,40px); color:#fff; box-shadow:var(--shadow-lg); margin-bottom:24px; position:relative; overflow:hidden;}
+  .rail-hero.ach{background:linear-gradient(135deg,#157a59,#1F9D74);}
+  .rail-hero.wire{background:linear-gradient(135deg,#a5302f,#D64545);}
+  .rail-hero.rtp{background:linear-gradient(135deg,#1c4fb5,#2D6CF6);}
+  .rail-hero.card{background:linear-gradient(135deg,#a9611a,#D98321);}
+  .rail-hero .eyebrow{color:rgba(255,255,255,.72);}
+  .rail-hero h2{font-size:clamp(28px,5vw,46px); color:#fff; margin-bottom:8px;}
+  .rail-hero .full{font-family:var(--mono); font-size:13px; color:rgba(255,255,255,.85); margin-bottom:16px;}
+  .rail-hero .summary{font-size:clamp(15px,2vw,18px); color:rgba(255,255,255,.95); max-width:62ch; margin:0;}
+  .statbar{display:flex; gap:10px; flex-wrap:wrap; margin-top:22px;}
+  .stat{background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.2); border-radius:12px; padding:10px 14px; min-width:120px;}
+  .stat .k{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.7);}
+  .stat .v{font-family:var(--display); font-weight:600; font-size:16px; color:#fff; margin-top:2px;}
+
+  .sec{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:24px; box-shadow:var(--shadow); margin-bottom:18px;}
+  .sec h3{font-size:18px; margin-bottom:14px; display:flex; align-items:center; gap:10px;}
+  .sec h3 .tab{width:7px; height:20px; border-radius:3px; background:var(--line-strong);}
+  .sec.ach h3 .tab{background:var(--ach);} .sec.wire h3 .tab{background:var(--wire);}
+  .sec.rtp h3 .tab{background:var(--rtp);} .sec.card h3 .tab{background:var(--card);}
+  .sec p{font-size:15px; color:var(--ink-soft);}
+
+  /* animated step track inside detail */
+  .steptrack{position:relative; margin:8px 0 6px; padding:34px 8px 8px;}
+  .steptrack .rule{position:absolute; left:3%; right:3%; top:48px; height:3px; border-radius:3px; background:var(--line); }
+  .steptrack .fill{position:absolute; left:3%; top:48px; height:3px; border-radius:3px; width:0;}
+  .sec.ach .fill{background:var(--ach);} .sec.wire .fill{background:var(--wire);}
+  .sec.rtp .fill{background:var(--rtp);} .sec.card .fill{background:var(--card);}
+  .steps{display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:8px; position:relative;}
+  .step{text-align:center; padding:0 4px;}
+  .step .dot{width:30px;height:30px;border-radius:50%; margin:0 auto 12px; display:grid; place-items:center; font-family:var(--mono); font-size:13px; font-weight:600; background:var(--surface); border:2px solid var(--line-strong); color:var(--muted); position:relative; z-index:2;}
+  .sec.ach .step .dot{border-color:var(--ach); color:#0f6b4d;} .sec.wire .step .dot{border-color:var(--wire); color:#9c2b2b;}
+  .sec.rtp .step .dot{border-color:var(--rtp); color:#1b4ba8;} .sec.card .step .dot{border-color:var(--card); color:#9a5d12;}
+  .step .lbl{font-size:12.5px; color:var(--ink-soft); line-height:1.35;}
+  @media(max-width:620px){
+    .steps{grid-auto-flow:row; grid-auto-columns:auto;}
+    .steptrack .rule,.steptrack .fill{display:none;}
+    .step{display:grid; grid-template-columns:30px 1fr; gap:12px; text-align:left; align-items:start; margin-bottom:10px;}
+    .step .dot{margin:0;}
+  }
+
+  .pc-grid{display:grid; gap:16px;}
+  @media(min-width:620px){ .pc-grid{grid-template-columns:1fr 1fr;} }
+  .pc{border-radius:14px; padding:18px; border:1px solid var(--line);}
+  .pc.pros{background:#F0FAF5; border-color:#CDEBDD;}
+  .pc.cons{background:#FFF5F4; border-color:#F4D9D6;}
+  .pc h4{font-size:14px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.08em; margin-bottom:10px;}
+  .pc.pros h4{color:#0f6b4d;} .pc.cons h4{color:#9c2b2b;}
+  .pc ul{margin:0; padding-left:0; list-style:none;}
+  .pc li{font-size:14px; color:var(--ink-soft); padding-left:24px; position:relative; margin-bottom:8px;}
+  .pc.pros li::before{content:"↑"; position:absolute; left:4px; color:var(--ach); font-weight:700;}
+  .pc.cons li::before{content:"↓"; position:absolute; left:4px; color:var(--wire); font-weight:700;}
+
+  .uselist{list-style:none; margin:0; padding:0; display:grid; gap:10px;}
+  .uselist li{display:flex; gap:12px; font-size:14.5px; color:var(--ink-soft); align-items:flex-start;}
+  .uselist li .b{width:7px;height:7px;border-radius:50%; margin-top:8px; flex:none; background:var(--line-strong);}
+  .sec.ach .uselist li .b{background:var(--ach);} .sec.wire .uselist li .b{background:var(--wire);}
+  .sec.rtp .uselist li .b{background:var(--rtp);} .sec.card .uselist li .b{background:var(--card);}
+  .seg-flag{font-family:var(--mono); font-size:11px; background:var(--surface-2); color:var(--ink); padding:2px 8px; border-radius:6px; margin-left:6px; border:1px solid var(--line);}
+
+  .pitfall{display:flex; gap:14px; background:#FFFBF0; border:1px solid #F2E4BE; border-left:4px solid var(--card); border-radius:12px; padding:14px 16px; margin-bottom:10px;}
+  .pitfall .warn{font-size:18px; line-height:1.2;}
+  .pitfall b{font-family:var(--display);}
+  .pitfall p{font-size:14px; color:var(--ink-soft); margin:2px 0 0;}
+
+  .rail-foot{display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; align-items:center; margin-top:24px; padding-top:20px; border-top:1px solid var(--line);}
+  .rail-foot .nextrails{display:flex; gap:8px; flex-wrap:wrap;}
+  .mini-rail{font-family:var(--mono); font-size:12px; padding:8px 13px; border-radius:99px; border:1px solid var(--line-strong); background:var(--surface); cursor:pointer; color:var(--ink-soft); transition:.16s; display:inline-flex; gap:7px; align-items:center;}
+  .mini-rail:hover{border-color:var(--ink); color:var(--ink);}
+  .mini-rail .swatch{width:8px;height:8px;border-radius:50%;}
+  .mini-rail.ach .swatch{background:var(--ach);} .mini-rail.wire .swatch{background:var(--wire);}
+  .mini-rail.rtp .swatch{background:var(--rtp);} .mini-rail.card .swatch{background:var(--card);}
+
+  /* ================= QUIZ ================= */
+  .quizwrap{background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:clamp(22px,4vw,38px); box-shadow:var(--shadow);}
+  .qcount{font-family:var(--mono); font-size:12px; color:var(--muted); margin-bottom:14px;}
+  .qbar{height:6px; background:var(--surface-2); border-radius:99px; overflow:hidden; margin-bottom:24px;}
+  .qbar .qfill{height:100%; background:linear-gradient(90deg,var(--rtp),var(--ach)); width:0; transition:.4s;}
+  .qscenario{font-size:clamp(18px,3vw,24px); font-family:var(--display); font-weight:600; margin-bottom:6px;}
+  .qhint{font-size:14px; color:var(--muted); margin-bottom:22px;}
+  .qopts{display:grid; gap:11px;}
+  @media(min-width:620px){ .qopts{grid-template-columns:1fr 1fr;} }
+  .qopt{
+    text-align:left; background:var(--surface); border:1.5px solid var(--line); border-radius:14px; padding:15px 18px; cursor:pointer;
+    font-family:var(--body); font-size:15px; color:var(--ink); transition:.16s; display:flex; align-items:center; gap:12px;
+  }
+  .qopt:hover:not(:disabled){border-color:var(--ink); transform:translateY(-2px);}
+  .qopt .qsw{width:11px;height:11px;border-radius:50%; flex:none;}
+  .qopt.ach .qsw{background:var(--ach);} .qopt.wire .qsw{background:var(--wire);}
+  .qopt.rtp .qsw{background:var(--rtp);} .qopt.card .qsw{background:var(--card);}
+  .qopt.correct{border-color:var(--ach); background:#F0FAF5;}
+  .qopt.wrong{border-color:var(--wire); background:#FFF5F4;}
+  .qopt:disabled{cursor:default;}
+  .qfeedback{margin-top:20px; border-radius:14px; padding:18px; font-size:14.5px; display:none; border:1px solid var(--line);}
+  .qfeedback.show{display:block; animation:rise .3s ease;}
+  .qfeedback.good{background:#F0FAF5; border-color:#CDEBDD;}
+  .qfeedback.bad{background:#FFF8EC; border-color:#F2E4BE;}
+  .qfeedback .verdict{font-family:var(--display); font-weight:600; font-size:16px; margin-bottom:6px;}
+  .qfeedback .next{margin-top:16px;}
+
+  /* ================= COMPLETE ================= */
+  .complete{background:var(--ink); color:#EAF0FA; border-radius:28px; padding:clamp(30px,5vw,56px); box-shadow:var(--shadow-lg); text-align:center;}
+  .complete h2{font-size:clamp(30px,6vw,52px); color:#fff; margin-bottom:14px;}
+  .complete .lede{color:#C4D2EA; max-width:54ch; margin:0 auto 26px; font-size:17px;}
+  .scorebadge{font-family:var(--mono); font-size:13px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); padding:8px 16px; border-radius:99px; display:inline-block; margin-bottom:26px;}
+  .recap{display:grid; gap:10px; max-width:560px; margin:0 auto 30px; text-align:left;}
+  .recap .r{display:flex; gap:12px; align-items:center; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px 16px; font-size:14px;}
+  .recap .r .sw{width:10px;height:10px;border-radius:50%; flex:none;}
+  .recap .r.ach .sw{background:var(--ach);} .recap .r.wire .sw{background:var(--wire);}
+  .recap .r.rtp .sw{background:var(--rtp);} .recap .r.card .sw{background:var(--card);}
+  .recap .r b{font-family:var(--mono); font-weight:600; min-width:46px;}
+  .recap .r span{color:#B6C6E2;}
+
+  footer.legal{max-width:var(--maxw); margin:0 auto; padding:0 clamp(16px,4vw,40px) 50px; color:var(--muted); font-size:11.5px; font-family:var(--mono); line-height:1.7;}
+  footer.legal a{color:var(--ink-soft);}
+
+  /* ================= GLOSSARY ================= */
+  .gloss-search{
+    width:100%; font-family:var(--body); font-size:15px; color:var(--ink);
+    padding:14px 18px; border:1px solid var(--line-strong); border-radius:14px; background:var(--surface);
+    box-shadow:var(--shadow); margin-bottom:22px; -webkit-appearance:none;
+  }
+  .gloss-search:focus{outline:3px solid var(--rtp); outline-offset:1px; border-color:var(--rtp);}
+  .glossary-list{display:grid; gap:12px;}
+  @media(min-width:720px){ .glossary-list{grid-template-columns:1fr 1fr;} }
+  .gterm{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px 18px; box-shadow:var(--shadow); border-left:4px solid var(--line-strong);}
+  .gterm.t-ach{border-left-color:var(--ach);} .gterm.t-wire{border-left-color:var(--wire);}
+  .gterm.t-rtp{border-left-color:var(--rtp);} .gterm.t-card{border-left-color:var(--card);}
+  .gterm.t-core{border-left-color:var(--ink);} .gterm.t-digital{border-left-color:#7A5AF8;}
+  .gterm .ghead{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:5px;}
+  .gterm h4{font-size:15.5px; font-family:var(--display); font-weight:600;}
+  .gterm .gtag{font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); white-space:nowrap;}
+  .gterm p{font-size:13.5px; color:var(--ink-soft); margin:0;}
+  .gterm .alias{font-family:var(--mono); font-size:11px; color:var(--muted);}
+  .gloss-empty{display:none; text-align:center; color:var(--muted); font-family:var(--mono); font-size:13px; padding:30px;}
+  .gterm.hide{display:none;}
+  @media(min-width:920px){ .hub-extra{grid-template-columns:repeat(2,1fr);} }
+
+  /* resume button */
+  .resume-btn{
+    font-family:var(--body); font-weight:600; font-size:15px; cursor:pointer; border-radius:99px;
+    padding:13px 24px; border:1px solid rgba(255,255,255,.35); background:rgba(255,255,255,.08); color:#fff; transition:.18s;
+    display:inline-flex; align-items:center; gap:9px;
+  }
+  .resume-btn:hover{background:rgba(255,255,255,.16);}
+  .resume-btn .dotmini{width:8px;height:8px;border-radius:50%;background:#8DE3C4;}
+
+  /* two sides of a payment */
+  .twoside{display:grid; gap:14px; margin-bottom:26px;}
+  @media(min-width:700px){ .twoside{grid-template-columns:1fr 1fr;} }
+  .side{border:1px solid var(--line); border-radius:var(--r); padding:20px; box-shadow:var(--shadow); background:var(--surface); border-top:4px solid var(--line-strong);}
+  .side.accept{border-top-color:var(--rtp);}
+  .side.payout{border-top-color:var(--ach);}
+  .side-h{font-family:var(--display); font-weight:600; font-size:14px; color:var(--muted); margin-bottom:9px;}
+  .side-h .dir{font-size:17px; margin-right:2px;}
+  .side.accept .dir{color:var(--rtp);}
+  .side.payout .dir{color:var(--ach);}
+  .side p{font-size:14px; color:var(--ink-soft); margin:0 0 12px;}
+  .side-tags{font-family:var(--mono); font-size:11.5px; color:var(--muted); padding-top:11px; border-top:1px dashed var(--line);}
+
+  /* 202-level badge */
+  .decoder .lvl{font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase; background:var(--card-bg); color:#9a5d12; padding:2px 7px; border-radius:6px; margin-left:8px; vertical-align:middle; font-weight:600;}
+
+  /* growth spectrum */
+  .growthbar{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:20px 24px 14px; box-shadow:var(--shadow); margin-bottom:22px;}
+  .growth-line{height:3px; border-radius:3px; background:linear-gradient(90deg,#6E8BB8,#4C6FB0,#2E4E86,#16243B); margin:2px 8px 0;}
+  .growth-stops{display:grid; grid-template-columns:repeat(4,1fr); margin-top:-8px;}
+  .gstop{font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); text-align:center; display:flex; flex-direction:column; align-items:center; gap:9px;}
+  .gdot{width:13px;height:13px;border-radius:50%; background:var(--ink); box-shadow:0 0 0 3px var(--surface), 0 0 0 4px var(--line-strong);}
+  .growth-ends{display:flex; justify-content:space-between; font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:12px;}
+
+  /* ---------- chapter stepper ---------- */
+  .stepper{display:none; align-items:center; gap:0; font-family:var(--mono); font-size:11px;}
+  @media(min-width:820px){ .stepper{display:flex;} .crumb{display:none !important;} }
+  .stp{display:flex; align-items:center; gap:6px; color:var(--muted); padding:0 10px; position:relative;}
+  .stp .sdot{width:8px;height:8px;border-radius:50%; background:var(--line-strong); transition:.2s;}
+  .stp.active{color:var(--ink); font-weight:600;}
+  .stp.active .sdot{background:var(--rtp); box-shadow:0 0 0 3px var(--rtp-bg);}
+  .stp.done .sdot{background:var(--ach);}
+  .stp+.stp::before{content:""; width:14px; height:1.5px; background:var(--line-strong); margin-right:10px;}
+
+  /* tappable flow nodes */
+  .flow .node{cursor:pointer; border-radius:12px; transition:.15s; border:1px solid transparent;}
+  .flow .node:hover{background:var(--surface-2); border-color:var(--line);}
+  .flow .node.sel{background:var(--rtp-bg); border-color:#B9CCF8;}
+  .flow-pop{display:none; margin:-14px 0 26px; background:var(--ink); color:#DCE6F6; border-radius:12px; padding:14px 18px; font-size:14px; animation:rise .25s ease;}
+  .flow-pop.show{display:block;}
+  .flow-pop b{color:#fff; font-family:var(--display);}
+  .flow-hint{font-family:var(--mono); font-size:11px; color:var(--muted); text-align:center; margin:-16px 0 22px;}
+
+  /* mobile vertical flow */
+  @media(max-width:600px){
+    .flow{flex-direction:column; align-items:stretch;}
+    .flow .node{display:flex; align-items:baseline; gap:10px; text-align:left; padding:10px 12px;}
+    .flow .arrow{flex:none; height:20px; display:flex; align-items:center; justify-content:flex-start; padding-left:16px; font-size:15px;}
+    .flow .arrow .ah{display:none;}
+    .flow .arrow::before{content:"↓";}
+  }
+
+  /* ---------- comparison table ---------- */
+  .cmp-wrap{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); overflow-x:auto;}
+  table.cmp{border-collapse:collapse; width:100%; min-width:640px; font-size:13.5px;}
+  .cmp th, .cmp td{padding:12px 14px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top;}
+  .cmp thead th{font-family:var(--display); font-size:15px; color:#fff; position:sticky; top:0;}
+  .cmp thead th:first-child{background:var(--surface); color:var(--muted); font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.08em;}
+  .cmp thead th.h-ach{background:var(--ach);} .cmp thead th.h-wire{background:var(--wire);}
+  .cmp thead th.h-rtp{background:var(--rtp);} .cmp thead th.h-card{background:var(--card);}
+  .cmp tbody th{font-family:var(--mono); font-size:11.5px; color:var(--muted); font-weight:600; white-space:nowrap; background:var(--surface-2);}
+  .cmp tbody tr:last-child th, .cmp tbody tr:last-child td{border-bottom:none;}
+  .cmp td b{font-family:var(--display); font-weight:600;}
+  .cmp .best td{background:#FDFBF3;}
+
+  /* finish banner on hub */
+  .finish-banner{display:none; margin:20px 0 4px; background:linear-gradient(120deg,#157a59,#1F9D74); color:#fff; border-radius:var(--r); padding:20px 24px; box-shadow:var(--shadow-lg); align-items:center; gap:18px; flex-wrap:wrap; justify-content:space-between;}
+  .finish-banner.show{display:flex; animation:rise .4s ease;}
+  .finish-banner h4{font-size:18px; color:#fff; margin-bottom:3px;}
+  .finish-banner p{font-size:13.5px; color:#DFF5EB; margin:0;}
+  .finish-banner .btn{background:#fff; color:#0f6b4d;}
+
+  /* ---------- print cheat sheet ---------- */
+  @media print{
+    body{background:#fff;}
+    .topbar, .backlink, .btn, .hub-extra, .restart, footer.legal, .gloss-search, .qopts, .flow-hint{display:none !important;}
+    .screen{display:none !important;}
+    #screen-compare{display:block !important;}
+    .cmp-wrap{box-shadow:none; border-color:#999; overflow:visible;}
+    table.cmp{min-width:0; font-size:11px;}
+    .cmp thead th{position:static; -webkit-print-color-adjust:exact; print-color-adjust:exact;}
+    .print-only{display:block !important;}
+    .stage{padding:0;}
+    .cheat-recap{display:grid !important;}
+  }
+  .print-only{display:none;}
+  .cheat-recap{display:grid; gap:8px; margin-top:18px;}
+  .cheat-recap .cr{font-size:12.5px; padding:9px 12px; border:1px solid var(--line); border-left-width:4px; border-radius:9px;}
+  .cheat-recap .cr b{font-family:var(--mono);}
+  .cheat-recap .cr.ach{border-left-color:var(--ach);} .cheat-recap .cr.wire{border-left-color:var(--wire);}
+  .cheat-recap .cr.rtp{border-left-color:var(--rtp);} .cheat-recap .cr.card{border-left-color:var(--card);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.05ms !important;}
+    .token{left:50% !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="glyph"></span> Money&nbsp;in&nbsp;Motion</div>
+  <div class="spacer"></div>
+  <div class="crumb" id="crumb">Payments&nbsp;101</div>
+  <div class="stepper" id="stepper" aria-label="Tour progress">
+    <span class="stp" data-step="1"><span class="sdot"></span>Basics</span>
+    <span class="stp" data-step="2"><span class="sdot"></span>Client</span>
+    <span class="stp" data-step="3"><span class="sdot"></span>Rails</span>
+    <span class="stp" data-step="4"><span class="sdot"></span>Quiz</span>
+  </div>
+  <div class="progress-mini" title="Rails you've explored" aria-label="Rails explored">
+    <span class="pdot ach" data-pd="ach"></span>
+    <span class="pdot wire" data-pd="wire"></span>
+    <span class="pdot rtp" data-pd="rtp"></span>
+    <span class="pdot card" data-pd="card"></span>
+  </div>
+  <button class="restart" onclick="go('screen-glossary')">A–Z Glossary</button>
+  <button class="restart" onclick="restart()">Restart</button>
+</div>
+
+<main class="stage">
+
+  <!-- ============ WELCOME ============ -->
+  <section class="screen active" id="screen-welcome">
+    <div class="hero">
+      <h1>Money in <em>Motion</em></h1>
+      <p class="lede">Every day, businesses need to move money — to pay staff, suppliers, and each other, across town or across an ocean. Our job is to move that money safely, on time, and at the right cost. This is the 20-minute tour of how it all works, told as a choose-your-own-path adventure. No finance degree required.</p>
+      <div class="hero-cta">
+        <button class="btn btn-primary" onclick="go('screen-fundamentals')">Start the tour <span class="arr">→</span></button>
+        <span id="resume-slot"></span>
+        <span class="hero-note">↓ watch the four rails below</span>
+      </div>
+
+      <div class="railmap" aria-hidden="true">
+        <div class="rail-row r-ach">
+          <div class="rail-tag">ACH</div>
+          <div class="rail-track"><span class="line"></span><span class="stn"></span><span class="stn"></span><span class="stn"></span><span class="token"></span></div>
+          <div class="rail-speed">cheap · 1–2 days · batched</div>
+        </div>
+        <div class="rail-row r-card">
+          <div class="rail-tag">CARD</div>
+          <div class="rail-track"><span class="line"></span><span class="stn"></span><span class="stn"></span><span class="stn"></span><span class="token"></span></div>
+          <div class="rail-speed">approve now · settle later</div>
+        </div>
+        <div class="rail-row r-wire">
+          <div class="rail-tag">WIRE</div>
+          <div class="rail-track"><span class="line"></span><span class="stn"></span><span class="stn"></span><span class="stn"></span><span class="token"></span></div>
+          <div class="rail-speed">fast · high-value · pricey</div>
+        </div>
+        <div class="rail-row r-rtp">
+          <div class="rail-tag">RTP</div>
+          <div class="rail-track"><span class="line"></span><span class="stn"></span><span class="stn"></span><span class="stn"></span><span class="token"></span></div>
+          <div class="rail-speed">instant · 24/7 · final</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FUNDAMENTALS ============ -->
+  <section class="screen" id="screen-fundamentals">
+    <button class="backlink" onclick="go('screen-welcome')">← back</button>
+    <div class="eyebrow">Chapter 1 · The fundamentals</div>
+    <h2 class="lead-h">What actually <em>is</em> a payment?</h2>
+    <p class="lead-p">Strip away the jargon and a payment is just this: value moving from someone who owes it to someone who is owed it. In our world that takes a few forms — one business paying another (<b>B2B</b>), a business paying consumers like payroll or refunds (<b>B2C</b>), a consumer paying a business at checkout (<b>C2B</b>), or a company simply moving its own cash between accounts. Whichever it is, the same four players are always involved:</p>
+
+    <div class="flow" aria-label="Payment flow: payer to payer's bank to network to payee's bank to payee">
+      <div class="node" onclick="flowTap(this,'payer')"><div class="big">Payer</div><div class="sm">sends the money</div></div>
+      <div class="arrow"><span class="ah">→</span></div>
+      <div class="node" onclick="flowTap(this,'obank')"><div class="big">Their bank</div><div class="sm">sends instructions</div></div>
+      <div class="arrow"><span class="ah">→</span></div>
+      <div class="node" onclick="flowTap(this,'rail')"><div class="big">A rail</div><div class="sm">the network in the middle</div></div>
+      <div class="arrow"><span class="ah">→</span></div>
+      <div class="node" onclick="flowTap(this,'rbank')"><div class="big">Their bank</div><div class="sm">receives funds</div></div>
+      <div class="arrow"><span class="ah">→</span></div>
+      <div class="node" onclick="flowTap(this,'payee')"><div class="big">Payee</div><div class="sm">gets paid</div></div>
+    </div>
+    <div class="flow-hint">↑ tap any player to see what they actually do</div>
+    <div class="flow-pop" id="flow-pop"></div>
+
+    <h3 style="font-size:20px; margin:28px 0 6px;">Every client sits on two sides of that flow</h3>
+    <p style="font-size:14.5px; color:var(--muted); max-width:64ch; margin:0 0 16px;">Most businesses need to both <em>get paid</em> and <em>pay out</em> — and we help with each side. Keeping these two directions straight is half the battle early on.</p>
+    <div class="twoside">
+      <div class="side accept">
+        <div class="side-h"><span class="dir">Getting paid</span> · Accept / Pay-in</div>
+        <p>The money coming <em>in</em>. When a customer checks out — by card, digital wallet, bank transfer, or bill pay — we help the business accept it. This is the world of <b>merchant services</b> and payment acceptance (the C2B side).</p>
+        <div class="side-tags">cards · digital wallets · online checkout · bill pay</div>
+      </div>
+      <div class="side payout">
+        <div class="side-h"><span class="dir">Paying out</span> · Disburse / Pay-out</div>
+        <p>The money going <em>out</em>, plus managing the cash in between. Paying suppliers, staff, and partners, and keeping accounts funded. This is the world of <b>treasury services</b> (the B2B and B2C side).</p>
+        <div class="side-tags">payroll · supplier payments · disbursements · liquidity</div>
+      </div>
+    </div>
+
+    <details class="decoder">
+      <summary>Decode the words you'll hear constantly: clearing, settlement &amp; reconcilement</summary>
+      <div class="body">
+        <dl>
+          <dt>Clearing</dt><dd>The banks swap the <em>instructions</em> — who's paying whom, how much, from which account. Think of it as agreeing on the receipt.</dd>
+          <dt>Settlement</dt><dd>The actual <em>money</em> moves between the banks. Think of it as the cash changing hands.</dd>
+          <dt>Reconcilement <span class="lvl">202-level</span></dt><dd>Matching the money that actually moved against what you expected — tying each payment back to its invoice or record so the books stay clean. It's where payments meets accounting, and it's the next layer up from the basics here.</dd>
+        </dl>
+        <p style="margin-top:14px;">Clearing and settlement can happen seconds apart (a real-time payment) or a couple of days apart (a standard bank transfer). That gap is exactly why we have different rails — and it's the single most useful idea to hold onto.</p>
+      </div>
+    </details>
+
+    <h3 style="font-size:20px; margin:10px 0 16px;">Our clients trust us to handle the following</h3>
+    <div class="blocks">
+      <div class="block">
+        <h3><span class="ico">🏦</span> Treasury services</h3>
+        <p>The umbrella term for helping a company manage its money: collecting what it's owed (receivables), paying what it owes (payables), and seeing it all in one place. When someone says "treasury," picture the company's money-control room.</p>
+        <div class="micro">a.k.a. cash management</div>
+      </div>
+      <div class="block">
+        <h3><span class="ico">💧</span> Liquidity</h3>
+        <p>Having the right amount of cash, in the right place, at the right time. We help clients sweep and pool cash across many accounts, entities, and countries so idle money earns its keep and no account runs dry.</p>
+        <div class="micro">keywords: sweeps · pooling · cash concentration</div>
+      </div>
+      <div class="block">
+        <h3><span class="ico">🔌</span> Digital Experience</h3>
+        <p>How clients actually trigger the payments flow: online portals, mobile apps, file uploads, and increasingly <b>APIs</b> that connect payments straight into their own systems for real-time balances, automatic reconciliation, and reporting.</p>
+        <div class="micro">portal · file transmissions · APIs</div>
+      </div>
+      <div class="block">
+        <h3><span class="ico">🛤️</span> The rails</h3>
+        <p>The networks that carry the money — ACH, Wire, RTP, and Card. Each has its own personality: speed, cost, certainty, reach, and how much information it can carry. The rest of this tour explores how to match each one to the job.</p>
+        <div class="micro">ACH · Wire · RTP · Card</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="go('screen-clients')">Next: who are we serving? <span class="arr">→</span></button>
+  </section>
+
+  <!-- ============ CLIENT SELECT ============ -->
+  <section class="screen" id="screen-clients">
+    <button class="backlink" onclick="go('screen-fundamentals')">← back to fundamentals</button>
+    <div class="eyebrow">Chapter 2 · Pick a client to shadow</div>
+    <h2 class="lead-h">Who are you helping today?</h2>
+    <p class="lead-p">The same four rails serve very different customers, and what counts as the "right" payment changes with the client's size and complexity. These four segments are also a rough <b>growth journey</b> — companies often graduate from one to the next as they scale. Choose a segment to see payments through their eyes; you can switch anytime.</p>
+
+    <div class="growthbar" aria-hidden="true">
+      <div class="growth-line"></div>
+      <div class="growth-stops">
+        <div class="gstop"><span class="gdot"></span>SMB</div>
+        <div class="gstop"><span class="gdot"></span>Middle Market</div>
+        <div class="gstop"><span class="gdot"></span>Corporates</div>
+        <div class="gstop"><span class="gdot"></span>Enterprise</div>
+      </div>
+      <div class="growth-ends"><span>Smaller · simpler</span><span>Larger · more complex →</span></div>
+    </div>
+
+    <div class="grid cols-4" id="client-grid"></div>
+  </section>
+
+  <!-- ============ RAIL HUB ============ -->
+  <section class="screen" id="screen-hub">
+    <button class="backlink" onclick="go('screen-clients')">← choose a different client</button>
+    <div class="hub-head">
+      <div>
+        <div class="eyebrow">Chapter 3 · The four rails</div>
+        <h2 class="lead-h" id="hub-title">Your client's toolkit</h2>
+      </div>
+      <span class="seg-chip">Shadowing: <b id="seg-name">—</b> <button onclick="go('screen-clients')">change</button></span>
+    </div>
+    <p class="lead-p" id="hub-blurb">Here's how this client tends to move money. Tap any rail to learn the basics, the trade-offs, the steps, and the traps. The colored badge shows how central each rail usually is for them.</p>
+
+    <div class="railcards" id="rail-grid"></div>
+
+    <div class="finish-banner" id="finish-banner">
+      <div><h4>All four rails explored 🎉</h4><p>You've seen the full toolkit. Take the quiz to lock it in, or head straight to the finish.</p></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn" style="background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.4);" onclick="startQuiz()">Take the quiz</button>
+        <button class="btn" onclick="go('screen-complete'); buildComplete();">Finish the tour →</button>
+      </div>
+    </div>
+
+    <div class="hub-extra">
+      <button class="xcard quiz" onclick="startQuiz()">
+        <span class="emoji">🎯</span>
+        <div><h4>Test yourself: Pick the Rail</h4><p>Five situations — one tailored to your client. Pick the smartest rail and learn why.</p></div>
+      </button>
+      <button class="xcard" onclick="go('screen-compare')">
+        <span class="emoji">📊</span>
+        <div><h4>Compare all four rails</h4><p>Speed, cost, limits, and reversibility side by side — the cheat sheet view.</p></div>
+      </button>
+      <button class="xcard" onclick="go('screen-glossary')">
+        <span class="emoji">🔤</span>
+        <div><h4>Jargon decoder</h4><p>Every term in plain English — RTGS, interchange, Nacha, ISO 20022, and more.</p></div>
+      </button>
+      <button class="xcard" onclick="go('screen-fundamentals')">
+        <span class="emoji">📘</span>
+        <div><h4>Revisit the fundamentals</h4><p>Treasury, liquidity, clearing vs. settlement — the building blocks.</p></div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ RAIL DETAIL ============ -->
+  <section class="screen" id="screen-rail">
+    <button class="backlink" onclick="go('screen-hub')">← back to the toolkit</button>
+    <div id="rail-detail"></div>
+  </section>
+
+  <!-- ============ COMPARE ============ -->
+  <section class="screen" id="screen-compare">
+    <button class="backlink" onclick="goBackFromCompare()">← back</button>
+    <div class="eyebrow">Reference · Side-by-side</div>
+    <h2 class="lead-h">The four rails, compared</h2>
+    <p class="lead-p">The whole tour on one screen. When in doubt, come back here — matching a payment to a rail almost always comes down to these seven rows.</p>
+
+    <div class="print-only" style="font-family:var(--display); font-size:22px; font-weight:700; margin-bottom:14px;">Money in Motion — Rail Cheat Sheet</div>
+
+    <div class="cmp-wrap">
+      <table class="cmp">
+        <thead>
+          <tr><th></th><th class="h-ach">ACH</th><th class="h-wire">Wire</th><th class="h-rtp">RTP</th><th class="h-card">Card</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>Speed</th><td>1–2 business days; same-day option</td><td>Minutes–hours, same business day</td><td><b>Seconds</b>, 24/7/365</td><td>Auth instant; funds in ~1–2 days</td></tr>
+          <tr><th>Typical cost</th><td><b>Pennies</b> per item</td><td>$15–$50+ per wire</td><td>Low flat fee</td><td>~1.5–3.5% of the sale</td></tr>
+          <tr><th>Amount limit</th><td>$1M same-day (→ $10M in 2027)</td><td><b>No practical cap</b></td><td>$10M per payment</td><td>Card / credit limits</td></tr>
+          <tr><th>Reversible?</th><td>Limited, rule-bound returns</td><td>Final — treat as gone</td><td>Final — no recall</td><td>Yes — chargebacks possible</td></tr>
+          <tr><th>Direction</th><td>Push <em>and</em> pull</td><td>Push only</td><td>Push only</td><td>Pull at checkout</td></tr>
+          <tr><th>Reach</th><td>Nearly every US account</td><td>Global via SWIFT</td><td>US-only, coverage growing</td><td>Global acceptance</td></tr>
+          <tr class="best"><th>Best for</th><td>Payroll, recurring, high volume</td><td>Big, urgent, cross-border</td><td>Instant, after-hours, final</td><td>Point of sale, controlled spend</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cheat-recap">
+      <div class="cr ach"><b>ACH</b> — the cheap workhorse: scheduled, batched, everywhere. Never instant.</div>
+      <div class="cr wire"><b>Wire</b> — the armored truck: any amount, same-day, final. Costly, and a fraud magnet.</div>
+      <div class="cr rtp"><b>RTP</b> — the instant rail: seconds, 24/7, final, up to $10M. US-only.</div>
+      <div class="cr card"><b>Card</b> — the convenient one: works everywhere, rich controls and data. Priciest to accept.</div>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:22px;">
+      <button class="btn btn-primary" onclick="window.print()">🖨 Print cheat sheet</button>
+      <button class="btn btn-ghost" onclick="goBackFromCompare()">Back to the tour</button>
+    </div>
+    <div class="print-only" style="font-family:var(--mono); font-size:9px; color:#666; margin-top:16px;">Figures reflect public US payment-system rules as of mid-2026. Confirm current limits, cutoffs, and pricing in live operating procedures.</div>
+  </section>
+
+  <!-- ============ GLOSSARY ============ -->
+  <section class="screen" id="screen-glossary">
+    <button class="backlink" onclick="goBackFromGlossary()">← back</button>
+    <div class="eyebrow">Reference · Plain-English glossary</div>
+    <h2 class="lead-h">The jargon decoder</h2>
+    <p class="lead-p">Every term you'll meet in this tour — and on the desk — explained without the jargon. Search to jump straight to one.</p>
+    <input id="gloss-search" class="gloss-search" type="search" placeholder="Search terms… (try “wire”, “fraud”, “float”)" oninput="filterGlossary(this.value)" aria-label="Search glossary" />
+    <div id="glossary-list" class="glossary-list"></div>
+    <div id="gloss-empty" class="gloss-empty">No terms match that search.</div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="screen" id="screen-quiz">
+    <button class="backlink" onclick="go('screen-hub')">← back to the toolkit</button>
+    <div class="quizwrap">
+      <div class="qcount" id="q-count">Question 1 of 4</div>
+      <div class="qbar"><div class="qfill" id="q-fill"></div></div>
+      <div class="qscenario" id="q-scenario"></div>
+      <div class="qhint" id="q-hint"></div>
+      <div class="qopts" id="q-opts"></div>
+      <div class="qfeedback" id="q-feedback">
+        <div class="verdict" id="q-verdict"></div>
+        <div id="q-explain"></div>
+        <div class="next"><button class="btn btn-primary" id="q-next" onclick="nextQuestion()">Next →</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMPLETE ============ -->
+  <section class="screen" id="screen-complete">
+    <div class="complete">
+      <div class="eyebrow" style="color:#8FA6CC;">Onboarding complete</div>
+      <h2>You can read the rails.</h2>
+      <p class="lede">You now know what a payment is, who's involved, and how to match ACH, Wire, RTP, and Card to the job in front of you. That instinct — picking the right rail for the moment — is the heart of the work.</p>
+      <div class="scorebadge" id="final-score">Quiz: not attempted yet</div>
+      <div class="recap">
+        <div class="r ach"><span class="sw"></span><b>ACH</b><span>Cheap and high-volume. The workhorse for payroll and recurring vendor payments — just never instant.</span></div>
+        <div class="r wire"><span class="sw"></span><b>Wire</b><span>Fast, final, any amount. Reserved for big, urgent, or cross-border payments — and a magnet for fraud.</span></div>
+        <div class="r rtp"><span class="sw"></span><b>RTP</b><span>Instant, 24/7, up to $10M. Brilliant when timing matters — US-only and irreversible.</span></div>
+        <div class="r card"><span class="sw"></span><b>Card</b><span>Convenient and controllable, with rich data and float — but the priciest to accept.</span></div>
+      </div>
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-primary" style="background:#fff;color:var(--ink);" onclick="printCheatSheet()">🖨 Print the cheat sheet</button>
+        <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="go('screen-clients')">Explore another client</button>
+        <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.3);" onclick="restart()">Start over</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="legal">
+  Training material for new joiners · Figures reflect public US payment-system rules as of mid-2026: RTP® per-transaction limit $10M (Feb 2025) and FedNow® $10M (Nov 2025); Same Day ACH limit $1M, rising to $10M (Sept 2027) per Nacha; card interchange ranges are typical, not guaranteed. Always confirm current limits, cutoffs, and pricing in live operating procedures before advising a client.
+</footer>
+
+<script>
+/* ---------------- DATA ---------------- */
+
+const SEGMENTS = {
+  smb:  { name:"Small &amp; Mid-Size Business", short:"SMB", num:"01",
+    who:"Owner-run shops and growing companies with a lean finance team (or just the founder).",
+    cares:"Keep it simple, reach for affordable, lower-cost options (think ground shipping vs. overnight air), get paid fast, and never run out of cash.",
+    blurb:"For an SMB, payments need to be low-cost and low-effort. They lean on ACH to pay people and Card to get paid by customers, reach for instant RTP when cash flow is tight, and use the occasional Wire for a big one-off." },
+  mm:   { name:"Middle Market", short:"Middle Market", num:"02",
+    who:"Established companies with a treasury function — a controller, Accounts Payable and Accounts Receivable teams, multiple bank accounts.",
+    cares:"Efficiency, control, and working capital as they scale up volume.",
+    blurb:"Middle-market treasuries run serious ACH volume for payroll and suppliers, fire off Wires for high-value or time-critical deals, pilot RTP for instant needs, and adopt virtual Cards to control and even profit from their payables." },
+  corp: { name:"Corporates", short:"Corporates", num:"03",
+    who:"Large, often multinational companies with sophisticated, multi-bank treasury teams who typically leverage ERP (Enterprise Resource Planning) and TMS (Treasury Management System) platforms.",
+    cares:"Liquidity optimization, straight-through processing, risk control, and global reach.",
+    blurb:"Corporates move money at scale and across borders: huge ACH files, domestic and cross-border Wires, RTP where it sharpens timing, big virtual-Card programs, and complex liquidity structures sweeping cash worldwide." },
+  ent:  { name:"Enterprise &amp; Platforms", short:"Enterprise", num:"04",
+    who:"The largest, most complex players — global corporations, marketplaces, and platforms embedding payments into their own products.",
+    cares:"Scale, automation, real-time data, and transparency.",
+    blurb:"Enterprises and platforms operate at massive scale, integrating with us through a combination of file transmissions and APIs. They move instant payments in volume on RTP and FedNow, run ACH and Cards at scale, and use virtual accounts to orchestrate money globally." }
+};
+
+// fit per segment per rail: core | common | situational
+const FIT = {
+  smb:  { ach:"core", card:"core", rtp:"common", wire:"situational" },
+  mm:   { ach:"core", wire:"common", card:"common", rtp:"common" },
+  corp: { ach:"core", wire:"core", rtp:"common", card:"common" },
+  ent:  { rtp:"core", ach:"core", card:"common", wire:"common" }
+};
+const FITLABEL = { core:"Core rail", common:"Used often", situational:"Situational" };
+
+const RAILS = {
+  ach: {
+    name:"ACH", color:"ach",
+    full:"Automated Clearing House · governed by Nacha",
+    tagline:"The low-cost workhorse of US payments",
+    chips:["Pennies per payment","1–2 days (or same-day)","Batched"],
+    summary:"ACH is the electronic, bank-to-bank network that quietly powers most routine US payments — your direct-deposit paycheck, the gym membership that auto-debits, the supplier you pay every month. It moves money in scheduled batches rather than one-at-a-time, which is why it's incredibly cheap but never truly instant.",
+    stats:[ ["Typical cost","~pennies / item"], ["Speed","1–2 biz days · same-day option"], ["Same-day cap","$1M → $10M (2027)"], ["Reach","Nearly every US account"] ],
+    basics:"ACH comes in two directions, and the difference matters. An <b>ACH credit</b> is a push — you send money out, like running payroll. An <b>ACH debit</b> is a pull — with the payer's authorization, you reach in and collect, like a subscription billing a customer. Standard ACH settles in 1–2 business days; <b>Same&nbsp;Day&nbsp;ACH</b> can land within hours. Either way it settles in batches a few times each banking day, and it doesn't run on weekends or federal holidays.",
+    steps:[ ["1","Originator submits a batch file of payments to its bank"], ["2","Bank sends the batch to the ACH operator in a window"], ["3","Operator sorts and routes entries to receiving banks"], ["4","Funds settle; money posts to the receiver's account"] ],
+    pros:["Cheapest rail at volume — fractions of a cent to a few cents","Reaches virtually every US bank account","Perfect for recurring and high-volume runs","Can both push (credit) and pull (debit) money","Automated and file-based — set it and forget it"],
+    cons:["Not instant — standard is 1–2 business days","No real-time confirmation the money truly arrived","Debits can be returned (e.g. insufficient funds) days later","Doesn't process on weekends or holidays","Limited, rule-bound reversals — not a true undo"],
+    uses:{
+      smb:[["Direct-deposit payroll for the team","core"],["Paying regular suppliers and rent","core"],["Auto-collecting customer subscriptions or invoices","common"]],
+      mm:[["Bulk payroll and benefits funding","core"],["Scheduled vendor and trade payments","core"],["Collecting receivables via pre-authorized debits","common"]],
+      corp:[["Large recurring payroll and pension files","core"],["High-volume domestic supplier disbursements","core"],["Cash concentration sweeps between own accounts","common"]],
+      ent:[["Mass payouts and refunds at scale","core"],["Account-to-account funding within the platform","core"],["Pay-by-bank collections embedded in checkout","common"]]
+    },
+    pitfalls:[
+      ["\"Sent\" is not \"settled.\"","A submitted ACH can still bounce back days later. Don't treat acceptance as final receipt of funds."],
+      ["Returns and R-codes.","Debits come back with codes like R01 (insufficient funds) or R10 (unauthorized). Build a process to catch and rework them."],
+      ["Authorization is everything.","Pulling an ACH debit without proper, provable authorization is a compliance problem — and an unauthorized-return magnet."],
+      ["Mind the cutoffs and the calendar.","Miss the window or hit a holiday weekend and a \"1-day\" payment can slip several days."]
+    ]
+  },
+
+  wire: {
+    name:"Wire", color:"wire",
+    full:"Fedwire / CHIPS (domestic) · SWIFT (cross-border)",
+    tagline:"Fast, final, and built for big money",
+    chips:["High fee per wire","Same-day","No practical cap"],
+    summary:"A wire is the armored truck of payments: each one is sent individually and settles with finality, usually within the same business day. There's no practical dollar ceiling, which makes wires the default for large, urgent, and cross-border payments — but they cost real money and, once sent, are extremely hard to claw back.",
+    stats:[ ["Typical cost","$15–$50+ domestic"], ["Speed","Minutes–hours, same-day"], ["Limit","No practical cap"], ["Reversibility","Final — treat as gone"] ],
+    basics:"Wires settle <b>gross</b> and <b>in real time</b> — one payment, settled on its own, immediately and irrevocably (the industry term is RTGS). Domestically in the US they run over <b>Fedwire</b> (the Federal Reserve) or <b>CHIPS</b> (The Clearing House). Cross-border, a wire usually travels as a <b>SWIFT</b> message hopping between correspondent banks, which is why an international wire can take a day or more and pick up intermediary fees and FX along the way.",
+    steps:[ ["1","Payer instructs the bank with exact beneficiary details"], ["2","Bank verifies, screens for sanctions/fraud, debits the account"], ["3","Funds move bank-to-bank and settle with finality"], ["4","Beneficiary bank credits the payee — irreversibly"] ],
+    pros:["Same-day, often within minutes during business hours","Final and irrevocable — certainty for the receiver","No practical dollar limit — handles the largest deals","Works internationally via correspondent banking","The trusted standard for high-value, time-critical money"],
+    cons:["Most expensive rail per transaction","Tied to banking hours and same-day cutoffs","Practically impossible to reverse once settled","Cross-border adds delays, FX spreads, intermediary fees","Historically carries thin structured remittance detail"],
+    uses:{
+      smb:[["A one-off large purchase like equipment or property","situational"],["Funding a deposit or closing where timing is fixed","situational"],["Paying an overseas supplier when no cheaper rail fits","common"]],
+      mm:[["Real-estate and escrow closings","common"],["Time-critical, high-value supplier payments","core"],["Cross-border payments to international vendors","common"]],
+      corp:[["M&A settlements and capital movements","core"],["Cross-border treasury funding across entities","core"],["Large, deadline-driven institutional payments","core"]],
+      ent:[["High-value counterparty and partner settlements","common"],["Cross-border corporate funding at scale","common"],["Backstop rail when instant networks don't reach","situational"]]
+    },
+    pitfalls:[
+      ["Wire fraud is the #1 threat.","Because wires are final, criminals target them with fake invoices and spoofed emails (\"business email compromise\"). One fraudulent instruction and the money can vanish."],
+      ["Verify beneficiaries out-of-band.","Always confirm new or changed bank details by calling a known number — never trust details that arrive only by email."],
+      ["One wrong digit can be unrecoverable.","There's no easy undo. Account and routing details must be exactly right before you send."],
+      ["Watch cross-border deductions.","Intermediary banks can shave fees and FX off the amount, so the payee may receive less than you sent."]
+    ]
+  },
+
+  rtp: {
+    name:"RTP", color:"rtp",
+    full:"Real-Time Payments · The Clearing House (FedNow is the Fed's sibling)",
+    tagline:"Instant, always-on, and final in seconds",
+    chips:["Low flat fee","Seconds · 24/7/365","Up to $10M"],
+    summary:"RTP is money that moves in seconds, any hour of any day — nights, weekends, holidays included. The payment is final the instant it lands, the receiver sees it immediately, and it carries rich data alongside it. It's credit-push only (you can only send, never pull), which neatly means there are no chargebacks.",
+    stats:[ ["Typical cost","Low flat fee"], ["Speed","Seconds · 24/7/365"], ["Limit","$10M per payment"], ["Reach","US-only · growing"] ],
+    basics:"On the RTP® network, the payer's bank pushes funds that settle and become available in <b>seconds</b>, with an instant confirmation back to the sender. It runs <b>24/7/365</b> and carries structured data (the ISO&nbsp;20022 standard), and it supports <b>Request for Payment</b> — a way to ask someone to pay you. As of February 2025 the per-payment limit is <b>$10&nbsp;million</b>. <b>FedNow®</b> is the Federal Reserve's separate instant rail with a similar design (its limit rose to $10M in late 2025); they're two different networks, not one.",
+    steps:[ ["1","Payer initiates an instant credit push (or answers a Request for Payment)"], ["2","Sending bank validates and routes it in real time"], ["3","RTP network confirms the receiving bank can accept"], ["4","Funds settle and post in seconds — sender gets confirmation"] ],
+    pros:["Truly instant — funds available in seconds","Runs 24/7/365, including nights and weekends","Final and confirmed — both sides know immediately","Carries rich remittance data with the payment","Credit-push only means no chargebacks"],
+    cons:["US domestic only — no cross-border today","Credit-push only — you can't pull funds","Irreversible, so errors and scams are hard to recover","Both banks must be on the network — reach is still growing","Capped at $10M per payment"],
+    uses:{
+      smb:[["Getting paid the moment a job is done","core"],["Just-in-time supplier payment when cash is tight","common"],["Instant payouts to gig or contract workers","common"]],
+      mm:[["After-hours or weekend vendor payments","common"],["Emergency or just-in-time disbursements","core"],["Request-for-Payment billing to customers","common"]],
+      corp:[["Time-sensitive treasury moves outside banking hours","common"],["Instant insurance or claims disbursements","common"],["High-value real-estate and title closings","core"]],
+      ent:[["Instant payouts at massive volume (gig, marketplace)","core"],["Embedded real-time pay-ins and pay-outs via API","core"],["Account-to-account transfers inside the platform","common"]]
+    },
+    pitfalls:[
+      ["Finality cuts both ways.","Instant + irreversible means a mistaken or fraud-induced payment is gone. There's no \"recall.\""],
+      ["Beware authorized-push-payment scams.","Fraudsters trick the real account holder into sending. Confirm who you're paying before you hit send."],
+      ["Not every bank is reachable yet.","Coverage is wide and growing but not universal — check the receiving bank participates before promising instant."],
+      ["RTP ≠ FedNow.","They're separate instant networks with limited interoperability. Know which one a given payment is using."]
+    ]
+  },
+
+  card: {
+    name:"Card", color:"card",
+    full:"Card networks · Visa / Mastercard / Amex · commercial &amp; acceptance",
+    tagline:"Convenient, controllable, and data-rich",
+    chips:["~1.5–3.5% to accept","Auth instant · funds 1–2 days","Rewards & float"],
+    summary:"Cards are everywhere consumers and businesses already are. In our world they show up two ways: helping a client get paid (accepting cards from their customers) and helping a client pay (corporate cards, purchasing cards, and single-use virtual cards for supplier payments). Authorization is instant; the cash settles to the merchant a day or two later.",
+    stats:[ ["Cost to accept","~1.5–3.5% of sale"], ["Speed","Auth instant · funds ~1–2 days"], ["Buyer perk","Rewards + payment float"], ["Watch-out","Chargebacks & PCI"] ],
+    basics:"When a card is used, the network (<b>Visa, Mastercard, Amex</b>) checks in real time that the funds or credit are available and approves — that's <b>authorization</b>. The actual money reaches the seller a day or two later — that's <b>settlement</b>. For paying out, businesses use <b>corporate cards</b> for travel, <b>purchasing cards (P-cards)</b> for small buys, and <b>virtual cards</b> — single-use card numbers with built-in limits — to pay suppliers with tight control and even earn rebates.",
+    steps:[ ["1","Buyer presents a card (in person, online, or virtual number)"], ["2","Network authorizes in real time against available funds/credit"], ["3","Transactions are batched and cleared between banks"], ["4","Merchant is funded — usually within 1–2 business days"] ],
+    pros:["Ubiquitous and frictionless — works anywhere, online too","Real-time authorization, so the seller knows instantly","Buyers get rewards and extra days of float (working capital)","Virtual & P-cards add tight controls and rich spend data","Strong buyer protections build customer trust"],
+    cons:["Priciest to accept — interchange and fees eat margin","Chargebacks let buyers dispute and reverse charges","Costly for very large B2B amounts versus ACH or wire","PCI-DSS security compliance is a real burden","Card-not-present fraud and false declines hurt sales"],
+    uses:{
+      smb:[["Accepting customer card payments in-store and online","core"],["Business card for supplies, software, and travel","core"],["Recurring subscription billing to customers","common"]],
+      mm:[["Virtual cards to pay suppliers with controls + rebates","common"],["P-cards for distributed, small-dollar purchasing","common"],["Card acceptance across multiple sales channels","core"]],
+      corp:[["Large virtual-card programs across the payables book","common"],["Global corporate travel & expense programs","common"],["Embedding card acceptance into customer channels","common"]],
+      ent:[["Card acceptance at platform scale (marketplace checkout)","core"],["Issuing cards to users/sellers via embedded programs","common"],["Virtual cards automating high-volume AP","common"]]
+    },
+    pitfalls:[
+      ["Interchange quietly eats margin.","Every accepted card costs a percentage. At high volume or large tickets, that adds up fast — sometimes another rail is smarter."],
+      ["Chargebacks and disputes.","Buyers can reverse a charge. Keep clean records and clear policies, and watch for \"friendly fraud.\""],
+      ["PCI compliance is mandatory.","Handling card data brings security obligations. Mishandling it risks fines and breaches."],
+      ["Card-not-present fraud.","Online and keyed transactions carry higher fraud and decline risk than a tapped card in person."]
+    ]
+  }
+};
+
+const QUIZ_CORE = [
+  { scenario:"A title company must disburse $4M for a real-estate closing — at 7pm on a Saturday.",
+    hint:"Banks are closed, it's a weekend, and it's a large, time-critical amount.",
+    answer:"rtp",
+    explain:{
+      rtp:"Exactly. RTP runs 24/7/365, settles in seconds with finality, and its $10M limit easily covers $4M. Real-estate closings are a flagship RTP use case precisely because they happen outside banking hours.",
+      ach:"ACH doesn't process on weekends and isn't instant — the closing can't wait until Monday's batch.",
+      wire:"Wires are same-day but tied to banking hours and cutoffs; a Saturday evening wire generally won't settle until the next business day.",
+      card:"Cards aren't built for multi-million-dollar account-to-account closings, and the acceptance cost would be enormous."
+    }},
+  { scenario:"You're running biweekly payroll for 5,000 employees.",
+    hint:"Same payment, huge volume, predictable schedule, and cost per item matters a lot.",
+    answer:"ach",
+    explain:{
+      ach:"Right. ACH is the payroll workhorse: pennies per item, built for scheduled high-volume batches, and reaching virtually every US bank account via direct deposit.",
+      wire:"Wiring 5,000 paychecks would cost a fortune in per-wire fees — wildly inefficient for routine payroll.",
+      rtp:"RTP could pay instantly, but you'd pay a fee per payment for speed payroll doesn't need, and not every bank is reachable.",
+      card:"Cards don't deposit salaries into employee bank accounts — wrong tool entirely."
+    }},
+  { scenario:"An urgent $20M payment is needed today to close an acquisition during business hours.",
+    hint:"Very large amount, same-day, finality required — and it's above some rails' limits.",
+    answer:"wire",
+    explain:{
+      wire:"Correct. Wires settle same-day with finality and have no practical dollar cap — the standard choice for large, deadline-driven deals like M&A.",
+      rtp:"RTP is instant and final, but $20M exceeds its $10M per-payment limit, so it can't carry this one.",
+      ach:"ACH isn't instant, and Same Day ACH currently tops out at $1M per payment — far too small here.",
+      card:"Cards are nowhere near suitable for a $20M account-to-account settlement."
+    }},
+  { scenario:"A field technician needs to buy $180 of parts at a hardware store, right now.",
+    hint:"Small, in-person, one-off purchase that needs spending controls.",
+    answer:"card",
+    explain:{
+      card:"Spot on. A purchasing card (P-card) is made for exactly this: instant, in-person, small-dollar buys with built-in limits and clean spend data for the finance team.",
+      ach:"ACH can't be tapped at a checkout counter, and it isn't instant.",
+      wire:"A wire for a $180 hardware run would cost more in fees than the parts themselves.",
+      rtp:"RTP is account-to-account, not a way to pay a merchant at a physical register."
+    }}
+];
+
+// One extra scenario tailored to the client you're shadowing
+const QUIZ_SEGMENT = {
+  smb: { scenario:"You just finished a $1,500 landscaping job and want the cash in your account before you drive home — not in two days.",
+    hint:"Small business, needs the money now, including evenings or weekends.",
+    answer:"rtp",
+    explain:{
+      rtp:"Yes. For an SMB, RTP means getting paid the moment the work is done — instant, final, and available 24/7, which is a game-changer for cash flow.",
+      ach:"ACH is cheap but takes 1–2 days and won't run on a weekend — you'd be waiting.",
+      wire:"A wire could move it same-day in business hours, but the fee is steep for $1,500 and it won't settle on an evening or weekend.",
+      card:"Card is for accepting customer payments at checkout, not pushing this cash into your own bank account instantly."
+    }},
+  mm: { scenario:"Your AP team pays 400 suppliers a month and wants rebates plus tighter controls on each payment.",
+    hint:"Recurring payables, and the client wants both spend control and something back.",
+    answer:"card",
+    explain:{
+      card:"Right. Virtual cards are the middle-market AP trick: single-use numbers with built-in limits give tight control, rich data, and earn rebates on spend you're making anyway.",
+      ach:"ACH is cheap and reliable for suppliers, but it earns no rebate and offers less per-payment control than a virtual card.",
+      wire:"Wiring 400 suppliers monthly would rack up huge per-wire fees with no rebate upside.",
+      rtp:"RTP is great for speed, but these payables aren't time-critical and RTP offers no rebate or card-style controls."
+    }},
+  corp: { scenario:"You owe a manufacturer in Germany €2M, due in three days.",
+    hint:"Large value, crosses a border and a currency — and most US instant rails stop at the water's edge.",
+    answer:"wire",
+    explain:{
+      wire:"Correct. Cross-border, high-value payments are wire territory — typically a SWIFT wire through correspondent banks, handling the currency and the international leg.",
+      rtp:"RTP is US-domestic only and doesn't do FX, so it can't reach a German supplier.",
+      ach:"Standard ACH is US-only; international ACH exists but is slow and not suited to a €2M, three-day deadline.",
+      card:"A €2M card payment would be wildly expensive in fees and isn't how large cross-border B2B settles."
+    }},
+  ent: { scenario:"Your marketplace must pay out 50,000 sellers their daily earnings every night — including weekends — and they expect it instantly.",
+    hint:"Massive volume, every single day, and the expectation is real-time.",
+    answer:"rtp",
+    explain:{
+      rtp:"Exactly. Instant payouts at scale — including nights and weekends — is a flagship RTP use case for platforms, usually delivered through APIs embedded in the product.",
+      ach:"ACH is cheap at volume but isn't instant and skips weekends, breaking the \"paid instantly, every day\" promise.",
+      wire:"50,000 wires a night would be astronomically expensive and operationally impossible.",
+      card:"Cards aren't how you push earnings into 50,000 sellers' bank accounts; that's account-to-account territory."
+    }}
+};
+
+/* ---------------- GLOSSARY ---------------- */
+const GLOSSARY = [
+  ["Payment","core","Value moving from a payer (who owes) to a payee (who is owed). Everything else is just how."],
+  ["Originator / Payer","core","The party sending the money. Their bank is the “originating” bank that kicks off the payment."],
+  ["Beneficiary / Payee","core","The party receiving the money. Their bank is the “receiving” bank that credits the account."],
+  ["Rail","core","An underlying network that carries money — ACH, Wire, RTP, or Card. Each has its own speed, cost, and reach."],
+  ["Clearing","core","Banks exchanging the payment instructions — who pays whom, how much. Agreeing on the receipt, before cash moves."],
+  ["Settlement","core","The actual money moving between banks. Can happen seconds (instant) or days (standard) after clearing."],
+  ["Finality / Irrevocable","core","The point where a payment can't be reversed. Wires and RTP are final fast — great for the receiver, unforgiving if you erred."],
+  ["Treasury services","core","The bank products that help a company manage its money: collecting receivables, making payables, and seeing cash in one place. a.k.a. cash management."],
+  ["Liquidity","core","Having the right cash, in the right place, at the right time. Managed by sweeping and pooling balances across accounts."],
+  ["Cash concentration / Sweep","core","Automatically moving balances from many accounts into one, so idle cash is pooled and put to work."],
+  ["Notional pooling","core","Combining account balances “on paper” for interest and reporting, without physically moving the cash."],
+  ["Float","core","The gap between paying and the cash actually leaving your account — extra days of use of the money. A buyer perk of cards."],
+  ["Working capital","core","The cash a business has on hand to run day-to-day. Faster collections and smart float improve it."],
+  ["Remittance information","core","The “what's this for” data that travels with a payment — invoice numbers, references. Newer rails carry far more of it."],
+  ["B2B · B2C · C2B","core","Shorthand for who's on each end: Business-to-Business, Business-to-Consumer, and Consumer-to-Business (a shopper paying a merchant)."],
+  ["Accept / Pay-in","core","The “getting paid” side — money coming into a business from its customers. Powered by merchant services."],
+  ["Pay-out / Disburse","core","The “paying out” side — money leaving a business to staff, suppliers, and partners. The heart of treasury services."],
+  ["Reconcilement","core","Matching payments that actually moved against what was expected, tying each back to its invoice. Where payments meets accounting."],
+  ["Straight-through processing (STP)","core","A payment that flows end-to-end automatically, with no manual re-keying — faster and less error-prone."],
+
+  ["ACH","ach","Automated Clearing House — the batched, low-cost US bank-to-bank network behind payroll, bills, and most routine payments."],
+  ["Nacha","ach","The body that writes and governs the ACH Network's rulebook."],
+  ["ACH credit","ach","A push: you send money out (e.g. paying salary into an employee's account)."],
+  ["ACH debit","ach","A pull: with authorization, you reach into a payer's account to collect (e.g. a subscription billing a customer)."],
+  ["Same Day ACH","ach","A faster ACH option that settles within the same banking day. Capped at $1M per payment today, rising to $10M in Sept 2027."],
+  ["Return / R-code","ach","An ACH that bounces back, tagged with a reason code — e.g. R01 (insufficient funds) or R10 (unauthorized)."],
+
+  ["Wire","wire","A single, individually-settled, same-day payment with finality and no practical dollar cap. The choice for big, urgent, or cross-border money."],
+  ["RTGS","wire","Real-Time Gross Settlement — the model behind wires: each payment settles on its own, in real time, with finality."],
+  ["Fedwire","wire","The Federal Reserve's domestic high-value wire system."],
+  ["CHIPS","wire","The Clearing House's domestic high-value payment system, an alternative to Fedwire for large-value wires."],
+  ["SWIFT","wire","The global messaging network banks use to instruct cross-border payments. It carries instructions; the money moves via correspondent banks."],
+  ["Correspondent / Intermediary bank","wire","A bank in the middle of a cross-border payment that relays funds between banks with no direct relationship — and may deduct a fee."],
+  ["Business email compromise (BEC)","wire","A scam where fraudsters spoof a vendor or executive by email to trick someone into wiring money to the wrong account."],
+
+  ["RTP","rtp","Real-Time Payments — The Clearing House's instant network. Money in seconds, 24/7/365, final, up to $10M per payment, US-only."],
+  ["FedNow","rtp","The Federal Reserve's instant-payment network — a separate sibling to RTP with a similar design (limit raised to $10M in late 2025)."],
+  ["Request for Payment (RfP)","rtp","A message that asks someone to pay you over an instant rail — they review and approve, then funds push instantly."],
+  ["ISO 20022","rtp","The modern, data-rich messaging standard that lets instant payments carry detailed remittance information."],
+  ["Authorized push payment (APP) fraud","rtp","A scam where the real account holder is tricked into sending an instant, irreversible payment to a fraudster."],
+
+  ["Card networks","card","Visa, Mastercard, Amex — the rails that authorize and settle card payments."],
+  ["Authorization","card","The instant check that funds or credit are available, approving a card transaction. Settlement (the actual money) follows a day or two later."],
+  ["Interchange","card","The fee, set by the networks, paid to the buyer's bank on each card transaction. The biggest chunk of card acceptance cost (~1.5–3.5%)."],
+  ["P-card (purchasing card)","card","A corporate card for distributed, small-dollar buying, with controls and reporting for the finance team."],
+  ["Virtual card","card","A single-use card number with built-in limits, used to pay suppliers with tight control, rich data, and rebates."],
+  ["Chargeback","card","A buyer-initiated reversal of a card payment. A real risk (and cost) for sellers; watch for “friendly fraud.”"],
+  ["PCI-DSS","card","The security standard everyone handling card data must follow. Mishandling it risks fines and breaches."],
+  ["Card-not-present (CNP)","card","Online or keyed-in transactions, where the card isn't physically tapped — higher fraud and decline risk."],
+  ["Merchant services","card","The tools that let a business accept customer payments — cards, digital wallets, online checkout. The “getting paid” side, also called acquiring."],
+  ["Acquiring","card","Processing and settling the card payments a merchant accepts; the acquirer represents the merchant's side of a card transaction."],
+  ["Digital wallet","card","A phone or app that stores payment credentials (Apple Pay, Google Pay, PayPal, etc.) so a customer can pay with a tap or a click."],
+  ["Bill pay","card","A service that lets payers settle bills electronically and lets billers receive and reconcile those payments."],
+
+  ["API","digital","A direct software-to-software connection that lets a client plug payments straight into their own systems for real-time action and data."],
+  ["Host-to-host","digital","A secure, automated file pipe between a client's systems and the bank, used to send large payment batches."],
+  ["Embedded payments","digital","Payments built directly into a company's own product, so users pay or get paid without leaving the experience."],
+  ["Virtual account","digital","A sub-account used to organize and track money under one real bank account — handy for reconciliation and liquidity at scale."],
+  ["ERP (Enterprise Resource Planning)","digital","The core software a large company runs its business on — finance, procurement, and more. Payments often plug straight into it."],
+  ["TMS (Treasury Management System)","digital","Software a treasury team uses to manage cash, payments, and liquidity across many banks and accounts."]
+];
+
+/* ---------------- STATE ---------------- */
+let state = { segment:null, explored:{ach:false,wire:false,rtp:false,card:false}, quizScore:null, currentRail:null, q:0, qScore:0, qLocked:false, quiz:[], prevScreen:'screen-welcome' };
+
+const STORE_KEY = 'moneyInMotion_payments101_v1';
+function saveState(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify({ segment:state.segment, explored:state.explored, quizScore:state.quizScore })); }catch(e){}
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return false;
+    const d = JSON.parse(raw);
+    if(d && d.explored){
+      state.explored = Object.assign({ach:false,wire:false,rtp:false,card:false}, d.explored);
+      state.quizScore = (d.quizScore===undefined?null:d.quizScore);
+      state.segment = d.segment || null;
+      return !!(d.segment || Object.values(state.explored).some(Boolean) || d.quizScore!==null);
+    }
+  }catch(e){}
+  return false;
+}
+
+/* ---------------- NAV ---------------- */
+function go(id){
+  if(id==='screen-glossary' || id==='screen-compare'){
+    const cur = document.querySelector('.screen.active');
+    if(cur && cur.id!==id) state.prevScreen = cur.id;
+  }
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+  updateCrumb(id);
+  syncStepper(id);
+  if(id==='screen-hub') updateFinishBanner();
+}
+function goBackFromGlossary(){ go(state.prevScreen || 'screen-welcome'); }
+function goBackFromCompare(){ go(state.prevScreen || 'screen-hub'); }
+function updateCrumb(id){
+  const map={ 'screen-welcome':'Payments 101', 'screen-fundamentals':'Ch.1 · Fundamentals',
+    'screen-clients':'Ch.2 · Choose a client', 'screen-hub':'Ch.3 · The rails',
+    'screen-rail':'Rail detail', 'screen-quiz':'Pick the Rail', 'screen-glossary':'Glossary',
+    'screen-compare':'Rail comparison', 'screen-complete':'Complete' };
+  document.getElementById('crumb').textContent = map[id] || 'Payments 101';
+}
+const STEPMAP = { 'screen-fundamentals':1, 'screen-clients':2, 'screen-hub':3, 'screen-rail':3, 'screen-compare':3, 'screen-quiz':4, 'screen-complete':5 };
+function syncStepper(id){
+  const cur = STEPMAP[id] || 0;
+  document.querySelectorAll('#stepper .stp').forEach(el=>{
+    const n = +el.dataset.step;
+    el.classList.toggle('active', n===cur);
+    el.classList.toggle('done', n<cur);
+  });
+}
+function updateFinishBanner(){
+  const b = document.getElementById('finish-banner');
+  if(b) b.classList.toggle('show', allExplored());
+}
+function printCheatSheet(){
+  go('screen-compare');
+  setTimeout(()=>window.print(), 350);
+}
+
+/* ---------------- FLOW POPOVER ---------------- */
+const FLOWINFO = {
+  payer:"<b>The payer</b> kicks everything off. They owe the money — a shopper at checkout, a company running payroll, a business settling an invoice — and they (or their system) create the payment instruction.",
+  obank:"<b>The payer's bank</b> (the originating bank) checks the instruction, makes sure the money's there, screens for fraud and sanctions, then sends it into the network. Nothing moves until this bank says go.",
+  rail:"<b>The rail</b> is the network in the middle — ACH, Wire, RTP, or Card. It carries the instruction (clearing) and moves the money between banks (settlement). Which rail you pick decides the speed, cost, and finality.",
+  rbank:"<b>The payee's bank</b> (the receiving bank) accepts the incoming payment and credits its customer's account. On instant rails it also confirms back to the sender in seconds.",
+  payee:"<b>The payee</b> is owed the money — the supplier, the employee, the merchant. Their real question is always the same: <em>when is it available, and is it final?</em>"
+};
+function flowTap(el, key){
+  document.querySelectorAll('.flow .node').forEach(n=>n.classList.remove('sel'));
+  const pop = document.getElementById('flow-pop');
+  if(pop.dataset.cur===key && pop.classList.contains('show')){
+    pop.classList.remove('show'); pop.dataset.cur=''; return;
+  }
+  el.classList.add('sel');
+  pop.innerHTML = FLOWINFO[key];
+  pop.dataset.cur = key;
+  pop.classList.add('show');
+}
+function restart(){
+  try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+  state = { segment:null, explored:{ach:false,wire:false,rtp:false,card:false}, quizScore:null, currentRail:null, q:0, qScore:0, qLocked:false, quiz:[], prevScreen:'screen-welcome' };
+  syncProgress();
+  document.getElementById('final-score').textContent = 'Quiz: not attempted yet';
+  const slot=document.getElementById('resume-slot'); if(slot) slot.innerHTML='';
+  go('screen-welcome');
+}
+
+/* ---------------- CLIENT CARDS ---------------- */
+function buildClients(){
+  const grid = document.getElementById('client-grid');
+  grid.innerHTML = '';
+  const order = ['smb','mm','corp','ent'];
+  order.forEach(key=>{
+    const s = SEGMENTS[key];
+    const b = document.createElement('button');
+    b.className = `pick s-${key}`;
+    b.onclick = ()=>chooseSegment(key);
+    b.innerHTML = `
+      <span class="stripe"></span>
+      <span class="num">${s.num}</span>
+      <h3>${s.name}</h3>
+      <div class="who"><b style="color:var(--ink)">Who:</b> ${s.who}<br><br><b style="color:var(--ink)">Cares about:</b> ${s.cares}</div>
+      <span class="go">Shadow this client →</span>`;
+    grid.appendChild(b);
+  });
+}
+
+function chooseSegment(key){
+  state.segment = key;
+  const s = SEGMENTS[key];
+  document.getElementById('seg-name').innerHTML = s.short;
+  document.getElementById('hub-title').innerHTML = `Moving money for a <em style="font-style:normal;color:var(--rtp)">${s.short}</em>`;
+  document.getElementById('hub-blurb').innerHTML = s.blurb + " Tap any rail to go deeper.";
+  buildRailGrid();
+  saveState();
+  go('screen-hub');
+}
+
+/* ---------------- RAIL HUB GRID ---------------- */
+function buildRailGrid(){
+  const grid = document.getElementById('rail-grid');
+  grid.innerHTML='';
+  const seg = state.segment;
+  // order rails by fit strength for this segment
+  const rank = {core:0, common:1, situational:2};
+  const keys = Object.keys(RAILS).sort((a,b)=> rank[FIT[seg][a]] - rank[FIT[seg][b]]);
+  keys.forEach(k=>{
+    const r = RAILS[k];
+    const fit = FIT[seg][k];
+    const card = document.createElement('button');
+    card.className = `railcard ${r.color} ${state.explored[k]?'explored':''}`;
+    card.onclick = ()=>openRail(k);
+    card.innerHTML = `
+      <span class="done-pill">✓ explored</span>
+      <div class="cap"></div>
+      <div class="inner">
+        <div class="top">
+          <h3>${r.name}</h3>
+          <span class="fit ${fit}">${FITLABEL[fit]}</span>
+        </div>
+        <div class="tagline">${r.tagline}</div>
+        <div class="chips">${r.chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* ---------------- RAIL DETAIL ---------------- */
+function openRail(k){
+  state.currentRail = k;
+  state.explored[k] = true;
+  syncProgress();
+  saveState();
+  const r = RAILS[k];
+  const seg = state.segment;
+  const uses = r.uses[seg].map(u=>{
+    const flag = u[1]==='core' ? '<span class="seg-flag">top fit</span>' : (u[1]==='common'?'<span class="seg-flag">common</span>':'<span class="seg-flag">situational</span>');
+    return `<li><span class="b"></span><span>${u[0]} ${flag}</span></li>`;
+  }).join('');
+
+  const stepCount = r.steps.length;
+  const stepsHTML = r.steps.map(s=>`<div class="step"><div class="dot">${s[0]}</div><div class="lbl">${s[1]}</div></div>`).join('');
+
+  const others = Object.keys(RAILS).filter(x=>x!==k).map(x=>{
+    return `<button class="mini-rail ${RAILS[x].color}" onclick="openRail('${x}')"><span class="swatch"></span>${RAILS[x].name} →</button>`;
+  }).join('');
+
+  document.getElementById('rail-detail').innerHTML = `
+    <div class="rail-hero ${r.color}">
+      <div class="eyebrow">${FITLABEL[FIT[seg][k]]} for ${SEGMENTS[seg].short} · Chapter 3</div>
+      <h2>${r.name}</h2>
+      <div class="full">${r.full}</div>
+      <p class="summary">${r.summary}</p>
+      <div class="statbar">${r.stats.map(s=>`<div class="stat"><div class="k">${s[0]}</div><div class="v">${s[1]}</div></div>`).join('')}</div>
+    </div>
+
+    <div class="sec ${r.color}">
+      <h3><span class="tab"></span>The basics</h3>
+      <p>${r.basics}</p>
+    </div>
+
+    <div class="sec ${r.color}">
+      <h3><span class="tab"></span>How a payment moves — the steps</h3>
+      <div class="steptrack">
+        <div class="rule"></div><div class="fill" id="stepfill"></div>
+        <div class="steps" style="grid-template-columns:repeat(${stepCount},1fr)">${stepsHTML}</div>
+      </div>
+    </div>
+
+    <div class="sec ${r.color}">
+      <h3><span class="tab"></span>Trade-offs at a glance</h3>
+      <div class="pc-grid">
+        <div class="pc pros"><h4>Strengths</h4><ul>${r.pros.map(p=>`<li>${p}</li>`).join('')}</ul></div>
+        <div class="pc cons"><h4>Limitations</h4><ul>${r.cons.map(c=>`<li>${c}</li>`).join('')}</ul></div>
+      </div>
+    </div>
+
+    <div class="sec ${r.color}">
+      <h3><span class="tab"></span>When a ${SEGMENTS[seg].short} reaches for ${r.name}</h3>
+      <ul class="uselist">${uses}</ul>
+    </div>
+
+    <div class="sec ${r.color}">
+      <h3><span class="tab"></span>Pitfalls &amp; pro tips</h3>
+      ${r.pitfalls.map(p=>`<div class="pitfall"><span class="warn">⚠️</span><div><b>${p[0]}</b><p>${p[1]}</p></div></div>`).join('')}
+    </div>
+
+    <div class="rail-foot">
+      <div class="nextrails">${others}</div>
+      <button class="btn btn-primary" onclick="afterRail()">${allExplored()?'Finish onboarding →':'Back to the toolkit →'}</button>
+    </div>`;
+
+  go('screen-rail');
+  // animate the step track fill
+  requestAnimationFrame(()=>{
+    setTimeout(()=>{ const f=document.getElementById('stepfill'); if(f) f.style.transition='width 1.1s cubic-bezier(.4,0,.2,1)', f.style.width='94%'; }, 180);
+  });
+}
+
+function afterRail(){ if(allExplored()){ go('screen-complete'); buildComplete(); } else { go('screen-hub'); } }
+function allExplored(){ return Object.values(state.explored).every(Boolean); }
+
+/* ---------------- PROGRESS ---------------- */
+function syncProgress(){
+  ['ach','wire','rtp','card'].forEach(k=>{
+    document.querySelectorAll(`.pdot[data-pd="${k}"]`).forEach(d=>d.classList.toggle('on', state.explored[k]));
+  });
+}
+
+/* ---------------- QUIZ ---------------- */
+function startQuiz(){
+  // Assemble: 4 universal questions + 1 tailored to the chosen client (inserted 2nd)
+  const seg = state.segment;
+  const tailored = seg && QUIZ_SEGMENT[seg] ? [QUIZ_SEGMENT[seg]] : [];
+  state.quiz = tailored.length
+    ? [QUIZ_CORE[0], tailored[0], QUIZ_CORE[1], QUIZ_CORE[2], QUIZ_CORE[3]]
+    : QUIZ_CORE.slice();
+  state.q=0; state.qScore=0; state.qLocked=false;
+  renderQuestion(); go('screen-quiz');
+}
+function renderQuestion(){
+  const Q = state.quiz, n = Q.length;
+  const q = Q[state.q];
+  state.qLocked=false;
+  document.getElementById('q-count').textContent = `Question ${state.q+1} of ${n}`;
+  document.getElementById('q-fill').style.width = `${(state.q/n)*100}%`;
+  document.getElementById('q-scenario').textContent = q.scenario;
+  document.getElementById('q-hint').textContent = q.hint;
+  const opts = document.getElementById('q-opts');
+  opts.innerHTML='';
+  const railKeys = ['ach','wire','rtp','card'];
+  railKeys.forEach(k=>{
+    const b=document.createElement('button');
+    b.className=`qopt ${k}`;
+    b.innerHTML=`<span class="qsw"></span> ${RAILS[k].name} — <span style="color:var(--muted);font-size:13px">${RAILS[k].tagline}</span>`;
+    b.onclick=()=>answer(k,b);
+    opts.appendChild(b);
+  });
+  const fb=document.getElementById('q-feedback');
+  fb.className='qfeedback';
+  document.getElementById('q-next').textContent = (state.q===n-1)?'See results →':'Next →';
+}
+function answer(k, btn){
+  if(state.qLocked) return;
+  state.qLocked=true;
+  const q=state.quiz[state.q];
+  const correct = q.answer;
+  const right = k===correct;
+  if(right) state.qScore++;
+  document.querySelectorAll('.qopt').forEach(o=>o.disabled=true);
+  btn.classList.add(right?'correct':'wrong');
+  if(!right){
+    document.querySelectorAll('.qopt').forEach(o=>{ if(o.classList.contains(correct)) o.classList.add('correct'); });
+  }
+  const fb=document.getElementById('q-feedback');
+  fb.className='qfeedback show '+(right?'good':'bad');
+  document.getElementById('q-verdict').textContent = right ? '✓ Nailed it' : `Not quite — the smart pick is ${RAILS[correct].name}`;
+  let html = `<p style="margin:0 0 4px"><b>${RAILS[correct].name}:</b> ${q.explain[correct]}</p>`;
+  if(!right){ html += `<p style="margin:8px 0 0;color:var(--muted)"><b>${RAILS[k].name}:</b> ${q.explain[k]}</p>`; }
+  document.getElementById('q-explain').innerHTML = html;
+  document.getElementById('q-fill').style.width = `${((state.q+1)/state.quiz.length)*100}%`;
+}
+function nextQuestion(){
+  if(state.q < state.quiz.length-1){ state.q++; renderQuestion(); window.scrollTo({top:0,behavior:'smooth'}); }
+  else { state.quizScore = state.qScore; saveState(); go('screen-complete'); buildComplete(); }
+}
+
+/* ---------------- COMPLETE ---------------- */
+function buildComplete(){
+  const el=document.getElementById('final-score');
+  if(state.quizScore===null){ el.textContent='Quiz: not attempted yet — try “Pick the Rail” from the toolkit'; }
+  else {
+    const s=state.quizScore, t=(state.quiz.length||5);
+    let note = s===t?'Perfect read on the rails.': s>=t-1?'Sharp instincts.':'Worth a second run to lock it in.';
+    el.textContent = `Pick the Rail: ${s} / ${t} — ${note}`;
+  }
+}
+
+/* ---------------- GLOSSARY ---------------- */
+const GTAGLABEL = { ach:"ACH", wire:"Wire", rtp:"Instant", card:"Card", core:"Core concept", digital:"Digital" };
+function buildGlossary(){
+  const list = document.getElementById('glossary-list');
+  list.innerHTML = GLOSSARY.map(g=>{
+    const [term, tag, def] = g;
+    return `<div class="gterm t-${tag}" data-text="${(term+' '+def).toLowerCase().replace(/"/g,'')}">
+      <div class="ghead"><h4>${term}</h4><span class="gtag">${GTAGLABEL[tag]||tag}</span></div>
+      <p>${def}</p>
+    </div>`;
+  }).join('');
+}
+function filterGlossary(q){
+  q = (q||'').trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('#glossary-list .gterm').forEach(el=>{
+    const match = !q || el.dataset.text.indexOf(q) !== -1;
+    el.classList.toggle('hide', !match);
+    if(match) shown++;
+  });
+  document.getElementById('gloss-empty').style.display = shown ? 'none' : 'block';
+}
+
+/* ---------------- RESUME ---------------- */
+function showResume(){
+  const slot = document.getElementById('resume-slot');
+  if(!slot) return;
+  const exploredCount = Object.values(state.explored).filter(Boolean).length;
+  if(!state.segment && exploredCount===0 && state.quizScore===null){ slot.innerHTML=''; return; }
+  const label = state.segment ? SEGMENTS[state.segment].short : 'your progress';
+  slot.innerHTML = `<button class="resume-btn" onclick="resume()"><span class="dotmini"></span>Resume — ${label}</button>`;
+}
+function resume(){
+  if(state.segment){
+    const s = SEGMENTS[state.segment];
+    document.getElementById('seg-name').innerHTML = s.short;
+    document.getElementById('hub-title').innerHTML = `Moving money for a <em style="font-style:normal;color:var(--rtp)">${s.short}</em>`;
+    document.getElementById('hub-blurb').innerHTML = s.blurb + " Tap any rail to go deeper.";
+    buildRailGrid();
+    go('screen-hub');
+  } else {
+    go('screen-clients');
+  }
+}
+
+/* ---------------- INIT ---------------- */
+buildClients();
+buildGlossary();
+loadState();
+syncProgress();
+showResume();
+</script>
+</body>
+</html>
